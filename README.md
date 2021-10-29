@@ -1,5 +1,10 @@
 # Testing OSS service
 
+0. update dependency
+```
+go mod vendor
+```
+
 1. run the server in OSS service
 ```
 go run main.go rpc
