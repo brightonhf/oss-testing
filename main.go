@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	orderSearchSchema "github.com/hellofresh/schema-registry-go/service/customer/order/v1beta1"
+	customerSearchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
 	searchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
 	v1 "github.com/hellofresh/schema-registry-go/shared/v1"
 )
@@ -39,7 +40,8 @@ func main() {
 	defer conn.Close()
 
 	// searchAll(conn)
-	searchOrders(conn)
+	// searchOrders(conn)
+	searchCustomers(conn)
 
 }
 
@@ -84,5 +86,29 @@ func searchOrders(conn *grpc.ClientConn) {
 
 	// we should get some result
 	log.Println("total orders:", res.GetTotal())
+	log.Println("IDs count:", len(res.GetIds()))
+}
+
+func searchCustomers(conn *grpc.ClientConn) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	email := "dasfasd*"
+	size := int32(10)
+
+	cs := customerSearchSchema.NewCustomerSearchServiceClient(conn)
+	res, err := cs.SearchCustomers(ctx, &customerSearchSchema.SearchCustomersRequest{
+		BusinessDivision: &v1.BusinessDivision{
+			RegionCode: "us",
+		},
+		Email:    &email,
+		PageSize: &size,
+	})
+	if err != nil {
+		log.Fatalf("could not get: %v", err)
+	}
+
+	// we should get some result
+	log.Println("total customers:", res.GetTotal())
 	log.Println("IDs count:", len(res.GetIds()))
 }
