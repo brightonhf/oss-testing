@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	orderSearchSchema "github.com/hellofresh/schema-registry-go/service/customer/order/v1beta1"
+	subscriptionSchema "github.com/hellofresh/schema-registry-go/service/customer/subscription/v1beta1"
 	customerSearchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
 	searchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
 	v1 "github.com/hellofresh/schema-registry-go/shared/v1"
@@ -41,7 +42,8 @@ func main() {
 
 	// searchAll(conn)
 	// searchOrders(conn)
-	searchCustomers(conn)
+	// searchCustomers(conn)
+	searchSubscriptions(conn)
 
 }
 
@@ -93,7 +95,7 @@ func searchCustomers(conn *grpc.ClientConn) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	email := "dasfasd*"
+	email := "dasfasd"
 	size := int32(10)
 
 	cs := customerSearchSchema.NewCustomerSearchServiceClient(conn)
@@ -110,5 +112,29 @@ func searchCustomers(conn *grpc.ClientConn) {
 
 	// we should get some result
 	log.Println("total customers:", res.GetTotal())
+	log.Println("IDs count:", len(res.GetIds()))
+}
+
+func searchSubscriptions(conn *grpc.ClientConn) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	email := "lupugabrielsp+55@gmail.com"
+	size := int32(10)
+
+	ss := subscriptionSchema.NewCustomerSubscriptionSearchServiceClient(conn)
+	res, err := ss.SearchSubscriptions(ctx, &subscriptionSchema.SearchSubscriptionsRequest{
+		BusinessDivision: &v1.BusinessDivision{
+			RegionCode: "us",
+		},
+		Email:    &email,
+		PageSize: &size,
+	})
+	if err != nil {
+		log.Fatalf("could not get: %v", err)
+	}
+
+	// we should get some result
+	log.Println("total subscriptions:", res.GetTotal())
 	log.Println("IDs count:", len(res.GetIds()))
 }
