@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"time"
@@ -12,11 +13,12 @@ import (
 	subscriptionSchema "github.com/hellofresh/schema-registry-go/service/customer/subscription/v1beta1"
 	customerSearchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
 	searchSchema "github.com/hellofresh/schema-registry-go/service/customer/v1beta1"
+	schema "github.com/hellofresh/schema-registry-go/service/shipping/tracking/v1beta2"
 	v1 "github.com/hellofresh/schema-registry-go/shared/v1"
 )
 
 var (
-	address = "localhost:8000"
+	address = "owl-search-service-grpc.ahoy-k8s.hellofresh.io:443"
 
 	// following doesn't work yet!, have to port forward to test the server
 	// however internally it works (cluster-cluster call)
@@ -30,10 +32,15 @@ func main() {
 
 	println(address)
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(address,
-		grpc.WithInsecure(),
-		grpc.WithTimeout(30*time.Second),
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
+
+	conn.Connect()
 
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -42,8 +49,30 @@ func main() {
 
 	// searchAll(conn)
 	// searchOrders(conn)
-	// searchCustomers(conn)
-	searchSubscriptions(conn)
+	searchCustomers(conn)
+	//searchSubscriptions(conn)
+
+	//track(conn)
+
+}
+
+func track(conn *grpc.ClientConn) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	c := schema.NewOdlBoxServiceClient(conn)
+
+	r, err := c.FindTrackingDetails(ctx, &schema.FindTrackingDetailsRequest{
+		OdlBoxId:   "isdf",
+		RegionCode: "us",
+	})
+
+	if err != nil {
+		log.Fatalf("could not track box %v", err)
+	}
+
+	log.Printf("response: %v", r.Items)
 
 }
 
@@ -52,6 +81,7 @@ func searchAll(conn *grpc.ClientConn) {
 	defer cancel()
 
 	c := searchSchema.NewSearchServiceClient(conn)
+
 	r, err := c.SearchAll(ctx, &searchSchema.SearchAllRequest{
 		BusinessDivision: &v1.BusinessDivision{
 			Brand:      0,
